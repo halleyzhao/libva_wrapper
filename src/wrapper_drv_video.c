@@ -331,7 +331,32 @@ vawr_CreateSurfaces(VADriverContextP ctx,
      * then if the config profile is VP8 we will map the surface into TTM
      */
     ctx->pDriverData = vawr->drv_data[0];
-    vaStatus = vawr->drv_vtable[0]->vaCreateSurfaces(ctx, width, height, format, num_surfaces, surfaces);
+    if (vawr->profile == VAProfileVP8Version0_3) {
+        /* create psb drv compatible surfaces */
+        int i=0;
+        VASurfaceAttrib surface_attrib[2];
+        surface_attrib[i].type = VASurfaceAttribUsageHint;
+        surface_attrib[i].flags = VA_SURFACE_ATTRIB_SETTABLE;
+        surface_attrib[i].value.type = VAGenericValueTypeInteger;
+        surface_attrib[i].value.value.i = VA_SURFACE_ATTRIB_USAGE_FORCE_TILING_NONE;
+        i++;
+
+        surface_attrib[i].type = VASurfaceAttribPixelFormat;
+        surface_attrib[i].flags = VA_SURFACE_ATTRIB_SETTABLE;
+        surface_attrib[i].value.type = VAGenericValueTypeInteger;
+        surface_attrib[i].value.value.i = VA_FOURCC_NV12;
+        i++;
+
+        if (setenv("I965_SURFACE_COMPAT_STRIDE", "1", 1)) {
+            vawr_errorMessage("fail to setup env for creating psb compatile surface\n");
+        }
+        vaStatus = vawr->drv_vtable[0]->vaCreateSurfaces2(ctx, format, width, height, surfaces, num_surfaces, surface_attrib, i);
+        if (unsetenv("I965_SURFACE_COMPAT_STRIDE")) {
+            vawr_errorMessage("fail to unset env for creating psb compatile surface\n");
+        }
+    } else {
+        vaStatus = vawr->drv_vtable[0]->vaCreateSurfaces(ctx, width, height, format, num_surfaces, surfaces);
+    }
     RESTORE_VAWRDATA(ctx, vawr);
 
 	return vaStatus;
