@@ -39,9 +39,6 @@
 #define ALIGN(i, n)    (((i) + (n) - 1) & ~((n) - 1))
 
 #define DRIVER_EXTENSION	"_drv_video.so"
-#define PRINTF printf
-#define PRINT_MARK printf("wrapper:  %s, %s, %d\n",__FILE__, __FUNCTION__, __LINE__)
-#define PRINT_MARK_ printf("wrapper:  %s, %s, %d ",__FILE__, __FUNCTION__, __LINE__)
 
 void vawr_errorMessage(const char *msg, ...)
 {
@@ -336,7 +333,6 @@ vawr_CreateSurfaces(VADriverContextP ctx,
      * then if the config profile is VP8 we will map the surface into TTM
      */
     ctx->pDriverData = vawr->drv_data[0];
-    PRINTF("ctx->pDriverData: %p\n", ctx->pDriverData);
 
     // XXX, assume we have already got correct profile (vaCreateConfig is called before vaCreateSurface)
     if (vawr->profile == VAProfileVP8Version0_3) {
@@ -356,12 +352,12 @@ vawr_CreateSurfaces(VADriverContextP ctx,
             h_stride = 4096;
         else
             assert(0);
-
         v_stride = ALIGN(height, 32);
         buffer_attrib.width = h_stride;
         buffer_attrib.height= v_stride;
         buffer_attrib.flags = 0; // tiling is diabled by default
         buffer_attrib.pixel_format = VA_FOURCC_NV12;
+
         surface_attrib.type = VASurfaceAttribExternalBufferDescriptor;
         surface_attrib.flags = VA_SURFACE_ATTRIB_SETTABLE;
         surface_attrib.value.type = VAGenericValueTypePointer;
@@ -369,12 +365,10 @@ vawr_CreateSurfaces(VADriverContextP ctx,
 
         vaStatus = vawr->drv_vtable[0]->vaCreateSurfaces2(ctx, format, width, height, surfaces, num_surfaces, &surface_attrib, 1);
      } else {
-        /* non-VP8 case, call create surface as usual */
         vaStatus = vawr->drv_vtable[0]->vaCreateSurfaces(ctx, width, height, format, num_surfaces, surfaces);
      }
 
     RESTORE_VAWRDATA(ctx, vawr);
-
 	return vaStatus;
 }
 
@@ -637,7 +631,6 @@ vawr_BeginPicture(VADriverContextP ctx,
     VASurfaceID vawr_render_target;
     vawr_surface_lookup_t *surface_lookup;
 
-    PRINT_MARK;
     GET_SURFACEID(vawr, surface_lookup, render_target, vawr_render_target);
     //vawr_infoMessage("vawr_BeginPicture: render_target %d\n", render_target);
     RESTORE_DRVDATA(ctx, vawr);
@@ -657,7 +650,6 @@ vawr_RenderPicture(VADriverContextP ctx,
     struct vawr_driver_data *vawr = GET_VAWRDATA(ctx);
     VAPictureParameterBufferVP8 * const pic_param;
 
-    PRINT_MARK;
     RESTORE_DRVDATA(ctx, vawr);
 
     /* For now, let's track the VP8's VAPictureParameterBufferType buf_id so that we can overwrite the
@@ -694,7 +686,6 @@ vawr_EndPicture(VADriverContextP ctx, VAContextID context)
     VAStatus vaStatus;
     struct vawr_driver_data *vawr = GET_VAWRDATA(ctx);
 
-    PRINT_MARK;
     RESTORE_DRVDATA(ctx, vawr);
     CALL_DRVVTABLE(vawr, vaStatus, vaEndPicture(ctx, context));
     RESTORE_VAWRDATA(ctx, vawr);
