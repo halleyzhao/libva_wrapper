@@ -336,8 +336,15 @@ vawr_CreateSurfaces(VADriverContextP ctx,
 
     // XXX, assume we have already got correct profile (vaCreateConfig is called before vaCreateSurface)
     if (vawr->profile == VAProfileVP8Version0_3) {
-        VASurfaceAttrib surface_attrib;
+        VASurfaceAttrib surface_attrib[2];
         VASurfaceAttribExternalBuffers buffer_attrib;
+        int i=0;
+
+        surface_attrib[i].type = VASurfaceAttribMemoryType;
+        surface_attrib[i].flags = VA_SURFACE_ATTRIB_SETTABLE;
+        surface_attrib[i].value.type = VAGenericValueTypeInteger;
+        surface_attrib[i].value.value.i = VA_SURFACE_ATTRIB_MEM_TYPE_VA;
+        i++;
 
         /* Calculate stride to meet psb requirement */
         if (512 >= width)
@@ -353,17 +360,19 @@ vawr_CreateSurfaces(VADriverContextP ctx,
         else
             assert(0);
         v_stride = ALIGN(height, 32);
+        memset(&buffer_attrib, 0, sizeof(VASurfaceAttribExternalBuffers));
         buffer_attrib.width = h_stride;
         buffer_attrib.height= v_stride;
         buffer_attrib.flags = 0; // tiling is diabled by default
         buffer_attrib.pixel_format = VA_FOURCC_NV12;
 
-        surface_attrib.type = VASurfaceAttribExternalBufferDescriptor;
-        surface_attrib.flags = VA_SURFACE_ATTRIB_SETTABLE;
-        surface_attrib.value.type = VAGenericValueTypePointer;
-        surface_attrib.value.value.p = &buffer_attrib;
+        surface_attrib[i].type = VASurfaceAttribExternalBufferDescriptor;
+        surface_attrib[i].flags = VA_SURFACE_ATTRIB_SETTABLE;
+        surface_attrib[i].value.type = VAGenericValueTypePointer;
+        surface_attrib[i].value.value.p = &buffer_attrib;
+        i++;
 
-        vaStatus = vawr->drv_vtable[0]->vaCreateSurfaces2(ctx, format, width, height, surfaces, num_surfaces, &surface_attrib, 1);
+        vaStatus = vawr->drv_vtable[0]->vaCreateSurfaces2(ctx, format, width, height, surfaces, num_surfaces, &surface_attrib[0], i);
      } else {
         vaStatus = vawr->drv_vtable[0]->vaCreateSurfaces(ctx, width, height, format, num_surfaces, surfaces);
      }
